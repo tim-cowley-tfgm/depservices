@@ -1,0 +1,119 @@
+// +build !unit
+
+package main
+
+import (
+	"encoding/json"
+	"github.com/TfGMEnterprise/departures-service/model"
+	"github.com/TfGMEnterprise/departures-service/repository"
+	"github.com/TfGMEnterprise/departures-service/test_helpers"
+	"github.com/gomodule/redigo/redis"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+)
+
+func TestIngester_Handler_Integration(t *testing.T) {
+	t.Run("stores data in cache", func(t *testing.T) {
+		redisHost := os.Getenv("REDIS_HOST")
+		if redisHost == "" {
+			t.Skip("set REDIS_HOST to run this test")
+			return
+		}
+
+		now := time.Now()
+		expectedDepartureTime1 := test_helpers.AdjustTime(now, "2m")
+		departure1 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "-1s"), 1234, test_helpers.AdjustTime(now, "1m"), &expectedDepartureTime1, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+		expectedDepartureTime2 := test_helpers.AdjustTime(now, "12m")
+		departure2 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "-1s"), 1235, test_helpers.AdjustTime(now, "11m"), &expectedDepartureTime2, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+		expectedDepartureTime3 := test_helpers.AdjustTime(now, "22m")
+		departure3 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "-1s"), 1236, test_helpers.AdjustTime(now, "21m"), &expectedDepartureTime3, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+
+		event := buildSnsEvent(t, departure1, departure2, departure3)
+
+		in := Ingester{
+			Pool: repository.NewRedisPool([]repository.RedisPoolOption{repository.RedisPoolDial(func() (redis.Conn, error) {
+				return redis.Dial("tcp", redisHost)
+			}),
+			}...),
+		}
+
+		conn := in.Pool.Get()
+		defer func() {
+			cerr := conn.Close()
+			if cerr != nil {
+				t.Error(cerr)
+			}
+		}()
+
+		_, err := conn.Do("FLUSHALL")
+		if err != nil {
+			t.Error(err)
+		}
+
+		if err := in.Handler(event); err != nil {
+			t.Error(err)
+			return
+		}
+
+		cachedLen, err := redis.Int(conn.Do("LLEN", locationAtcocode))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		expectedLen := 3
+
+		if cachedLen != expectedLen {
+			t.Errorf("Expected cached length to be %d, got %d", expectedLen, cachedLen)
+			return
+		}
+
+		newExpectedDepartureTime1 := test_helpers.AdjustTime(now, "-1m")
+		newDeparture1 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "0s"), 1234, test_helpers.AdjustTime(now, "1m"), &newExpectedDepartureTime1, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+		newExpectedDepartureTime2 := test_helpers.AdjustTime(now, "13m")
+		newDeparture2 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "0s"), 1235, test_helpers.AdjustTime(now, "11m"), &newExpectedDepartureTime2, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+		newExpectedDepartureTime3 := test_helpers.AdjustTime(now, "23m")
+		newDeparture3 := buildJSONDeparture(t, test_helpers.AdjustTime(now, "0s"), 1236, test_helpers.AdjustTime(now, "21m"), &newExpectedDepartureTime3, locationAtcocode, &locationStand, "1800WA12481", "Hobbiton", "534", "ANWE")
+
+		newEvent := buildSnsEvent(t, newDeparture1, newDeparture2, newDeparture3)
+
+		if err := in.Handler(newEvent); err != nil {
+			t.Error(err)
+			return
+		}
+
+		var newExpectedLen = 2
+
+		newCachedLen, err := redis.Int(conn.Do("LLEN", locationAtcocode))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if newCachedLen != newExpectedLen {
+			t.Errorf("Expected new cached length to be %d, got %d", newExpectedLen, newCachedLen)
+			return
+		}
+
+		cachedRecords, err := redis.Strings(conn.Do("LRANGE", locationAtcocode, 0, newCachedLen))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		for i := 0; i < newCachedLen; i++ {
+			cachedRecord := model.Departure{}
+			err := json.Unmarshal([]byte(cachedRecords[i]), &cachedRecord)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			//if !reflect.DeepEqual(cachedRecord, newEvent.Departures[i+1]) {
+			//	t.Errorf("Expected cached record to equal new record:\n%#v\n%#v\n", cachedRecord, newEvent.Departures[i+1])
+			//}
+		}
+	})
+}

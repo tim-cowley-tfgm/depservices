@@ -1,0 +1,10 @@
+<Siri xmlns="http://www.siri.org.uk/siri"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.3"
+      xsi:schemaLocation="http://www.siri.org.uk/siri ../siri.xsd">
+    <DataSupplyRequest>
+        <RequestTimestamp>2004-12-17T09:30:47-05:00</RequestTimestamp>
+        <ConsumerRef>NADER</ConsumerRef>
+        <NotificationRef>2004-12-17T09:30:47-05:00</NotificationRef>
+        <AllData>false</AllData>
+    </DataSupplyRequest>
+</Siri>

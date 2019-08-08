@@ -1,0 +1,32 @@
+<Siri xmlns="http://www.siri.org.uk/siri"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.3"
+      xsi:schemaLocation="http://www.siri.org.uk/siri ../siri.xsd">
+    <CapabilitiesRequest version="1.3">
+        <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        <RequestorRef>12345</RequestorRef>
+        <ProductionTimetableCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </ProductionTimetableCapabilitiesRequest>
+        <EstimatedTimetableCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </EstimatedTimetableCapabilitiesRequest>
+        <StopTimetableCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </StopTimetableCapabilitiesRequest>
+        <StopMonitoringCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </StopMonitoringCapabilitiesRequest>
+        <VehicleMonitoringCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </VehicleMonitoringCapabilitiesRequest>
+        <ConnectionTimetableCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </ConnectionTimetableCapabilitiesRequest>
+        <ConnectionMonitoringCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </ConnectionMonitoringCapabilitiesRequest>
+        <GeneralMessageCapabilitiesRequest>
+            <RequestTimestamp>2001-12-17T09:30:47.0Z</RequestTimestamp>
+        </GeneralMessageCapabilitiesRequest>
+    </CapabilitiesRequest>
+</Siri>
